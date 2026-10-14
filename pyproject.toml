@@ -1,0 +1,22 @@
+[project]
+name = "forgetune"
+version = "0.1.0"
+description = "Fine-tune a small open model on your own data in one command: LoRA, QLoRA or DPO, with evaluation."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Ali Ashter" }]
+dependencies = ["torch", "transformers>=5", "trl>=1.10", "peft>=0.15", "accelerate", "bitsandbytes", "datasets"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+forgetune = "forgetune.cli:main"
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["forgetune"]
