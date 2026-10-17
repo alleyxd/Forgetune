@@ -1,5 +1,7 @@
 # Forgetune
 
+[![tests](https://github.com/alleyxd/Forgetune/actions/workflows/tests.yml/badge.svg)](https://github.com/alleyxd/Forgetune/actions/workflows/tests.yml)
+
 Fine-tune a small open model on your own data with one command, and measure whether it helped.
 Supervised fine-tuning with LoRA or QLoRA, preference tuning with DPO, held-out evaluation, and adapter merging,
 on a single consumer GPU. Built on Hugging Face Transformers, TRL and PEFT.
