@@ -17,7 +17,9 @@ from datasets import Dataset, load_dataset
 def read(source: str, split: str = "train", limit: int | None = None) -> Dataset:
     if Path(source).exists():
         rows = [json.loads(l) for l in Path(source).read_text(encoding="utf-8").splitlines() if l.strip()]
-        ds = Dataset.from_list(rows)
+        # from_list takes its columns from the first row, so give every row every key seen in the file
+        keys = list(dict.fromkeys(k for r in rows for k in r))
+        ds = Dataset.from_list([{k: r.get(k) for k in keys} for r in rows])
     else:
         name, _, config = source.partition(":")
         ds = load_dataset(name, config or None, split=split)

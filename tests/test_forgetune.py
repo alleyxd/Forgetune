@@ -83,3 +83,12 @@ def test_check_passes_clean_data(tmp_path):
                                                                  {"role": "assistant", "content": "d"}]}])
     r = check(train)
     assert not failed(r) and r["kinds"] == {"sft": 2} and r["length"]["unit"] == "chars"
+
+
+def test_mixed_formats_in_one_file(tmp_path):
+    src = write_jsonl(tmp_path / "d.jsonl", [
+        {"prompt": "2+2?", "completion": "4"},
+        {"messages": [{"role": "user", "content": "3+3?"}, {"role": "assistant", "content": "6"}]},
+    ])
+    ds = data.to_sft(data.read(src), FakeTok())
+    assert [r["completion"] for r in ds] == ["4</s>", "6</s>"]
