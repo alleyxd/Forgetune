@@ -29,6 +29,10 @@ def main():
     e.add_argument("--system")
     e.add_argument("--limit", type=int)
     e.add_argument("--save")
+    k = sub.add_parser("compare", help="what changed between two saved evaluations (eval --save)")
+    k.add_argument("before")
+    k.add_argument("after")
+    k.add_argument("--show", type=int, default=3, help="examples to print of each kind")
     c = sub.add_parser("check", help="find problems in a dataset before training on it")
     c.add_argument("--data", required=True)
     c.add_argument("--against", help="test set to check for prompts that also appear in --data")
@@ -53,6 +57,9 @@ def main():
         if args.save:
             save(res, args.save)
         print(json.dumps({k: v for k, v in res.items() if k != "rows"}, indent=1))
+    elif args.cmd == "compare":
+        from .compare import compare
+        print(json.dumps(compare(args.before, args.after, args.show), indent=1, ensure_ascii=False))
     elif args.cmd == "check":
         from .check import check, failed
         report = check(args.data, args.against, args.model, args.max_len, args.limit)
