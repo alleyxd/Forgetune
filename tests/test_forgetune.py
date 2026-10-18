@@ -52,3 +52,34 @@ def test_limit(tmp_path):
 ])
 def test_sql_normalisation(a, b):
     assert norm(a) == norm(b)
+
+
+def test_check_finds_problems_and_leaks(tmp_path):
+    from forgetune.check import check, failed
+    train = write_jsonl(tmp_path / "train.jsonl", [
+        {"prompt": "2+2?", "completion": "4"},
+        {"prompt": "2 + 2?", "completion": "4"},
+        {"prompt": "capital of France?", "completion": "Paris"},
+        {"prompt": "capital of france?", "completion": "Lyon"},
+        {"prompt": "empty", "completion": ""},
+        {"prompt": "pick", "chosen": "a", "rejected": "a"},
+        {"text": "no recognised fields"},
+    ])
+    test = write_jsonl(tmp_path / "test.jsonl", [{"prompt": "Capital of France?", "completion": "Paris"},
+                                                 {"prompt": "3+3?", "completion": "6"}])
+    r = check(train, against=test)
+    assert r["problems"]["empty or missing target"]["rows"] == [4]
+    assert r["problems"]["chosen equals rejected"]["rows"] == [5]
+    assert r["problems"]["unrecognised format"]["rows"] == [6]
+    assert r["prompts_with_different_targets"] == 1
+    assert r["overlap_with_test"]["rows"] == [0]
+    assert failed(r)
+
+
+def test_check_passes_clean_data(tmp_path):
+    from forgetune.check import check, failed
+    train = write_jsonl(tmp_path / "train.jsonl", [{"prompt": "a?", "completion": "b"},
+                                                   {"messages": [{"role": "user", "content": "c?"},
+                                                                 {"role": "assistant", "content": "d"}]}])
+    r = check(train)
+    assert not failed(r) and r["kinds"] == {"sft": 2} and r["length"]["unit"] == "chars"
