@@ -65,9 +65,15 @@ only.
 ```bash
 forgetune sft   --model MODEL --data train.jsonl --out runs/x [--qlora] [--lora-r 16] [--epochs 1] [--system "..."]
 forgetune dpo   --model MODEL --data pairs.jsonl --out runs/y [--beta 0.1]
+forgetune check --data train.jsonl [--against test.jsonl] [--model MODEL --max-len 1024]
 forgetune eval  --model MODEL [--adapter runs/x] --data test.jsonl [--save results.json]
 forgetune merge --adapter runs/x --out merged/x      # one standalone model, faster to serve
 ```
+
+`check` reads the data the way training will and reports rows that would fail or teach nothing (missing fields,
+empty targets, identical chosen and rejected answers), duplicate and contradictory prompts, rows longer than
+`--max-len`, and test prompts that also appear in the training set. It exits with status 1 when it finds any of
+these, so it can run in CI before a training job.
 
 Each run writes `forgetune.json` next to the adapter with the settings, the final training loss, the time taken,
 and the peak GPU memory.

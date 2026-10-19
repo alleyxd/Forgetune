@@ -29,6 +29,12 @@ def main():
     e.add_argument("--system")
     e.add_argument("--limit", type=int)
     e.add_argument("--save")
+    c = sub.add_parser("check", help="find problems in a dataset before training on it")
+    c.add_argument("--data", required=True)
+    c.add_argument("--against", help="test set to check for prompts that also appear in --data")
+    c.add_argument("--model", help="count tokens with this model's tokenizer instead of characters")
+    c.add_argument("--max-len", type=int, default=1024)
+    c.add_argument("--limit", type=int)
     m = sub.add_parser("merge", help="merge a LoRA adapter into its base model")
     m.add_argument("--adapter", required=True)
     m.add_argument("--out", required=True)
@@ -47,6 +53,11 @@ def main():
         if args.save:
             save(res, args.save)
         print(json.dumps({k: v for k, v in res.items() if k != "rows"}, indent=1))
+    elif args.cmd == "check":
+        from .check import check, failed
+        report = check(args.data, args.against, args.model, args.max_len, args.limit)
+        print(json.dumps(report, indent=1, ensure_ascii=False))
+        raise SystemExit(1 if failed(report) else 0)
     else:
         from .train import merge
         merge(args.adapter, args.out)
