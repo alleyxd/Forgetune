@@ -68,6 +68,7 @@ forgetune dpo   --model MODEL --data pairs.jsonl --out runs/y [--beta 0.1]
 forgetune check --data train.jsonl [--against test.jsonl] [--model MODEL --max-len 1024]
 forgetune eval  --model MODEL [--adapter runs/x] --data test.jsonl [--save results.json]
 forgetune merge --adapter runs/x --out merged/x      # one standalone model, faster to serve
+forgetune compare base.json tuned.json            # per example: what the run fixed and what it broke
 ```
 
 `check` reads the data the way training will and reports rows that would fail or teach nothing (missing fields,

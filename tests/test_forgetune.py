@@ -83,3 +83,23 @@ def test_check_passes_clean_data(tmp_path):
                                                                  {"role": "assistant", "content": "d"}]}])
     r = check(train)
     assert not failed(r) and r["kinds"] == {"sft": 2} and r["length"]["unit"] == "chars"
+
+
+def test_mixed_formats_in_one_file(tmp_path):
+    src = write_jsonl(tmp_path / "d.jsonl", [
+        {"prompt": "2+2?", "completion": "4"},
+        {"messages": [{"role": "user", "content": "3+3?"}, {"role": "assistant", "content": "6"}]},
+    ])
+    ds = data.to_sft(data.read(src), FakeTok())
+    assert [r["completion"] for r in ds] == ["4</s>", "6</s>"]
+
+
+def test_compare_counts_fixed_and_broken(tmp_path):
+    from forgetune.compare import compare
+    rows = lambda oks: [{"prompt": f"q{i}", "gold": "x", "pred": "x" if ok else "y", "ok": ok} for i, ok in enumerate(oks)]
+    (tmp_path / "a.json").write_text(json.dumps({"rows": rows([True, False, False, True])}))
+    (tmp_path / "b.json").write_text(json.dumps({"rows": rows([True, True, True, False]) + [{"prompt": "extra", "gold": "x", "pred": "x", "ok": True}]}))
+    r = compare(str(tmp_path / "a.json"), str(tmp_path / "b.json"))
+    assert (r["compared"], r["fixed"], r["broken"], r["only_in_after"]) == (4, 2, 1, 1)
+    assert (r["accuracy_before"], r["accuracy_after"]) == (0.5, 0.75)
+    assert r["examples_broken"][0]["prompt"] == "q3"
