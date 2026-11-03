@@ -28,10 +28,16 @@ def read(source: str, split: str = "train", limit: int | None = None) -> Dataset
     return ds
 
 
-def render_prompt(tok, user: str, system: str | None = None) -> str:
-    msgs = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": user}]
+def render_messages(tok, msgs: list[dict], system: str | None = None) -> str:
+    # a system message in the data wins over the default one
+    if system and not (msgs and msgs[0]["role"] == "system"):
+        msgs = [{"role": "system", "content": system}] + msgs
     # enable_thinking=False keeps Qwen3-style models from emitting a reasoning block; other templates ignore it
     return tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+
+
+def render_prompt(tok, user: str, system: str | None = None) -> str:
+    return render_messages(tok, [{"role": "user", "content": user}], system)
 
 
 def to_sft(ds: Dataset, tok, system: str | None = None) -> Dataset:
@@ -39,9 +45,9 @@ def to_sft(ds: Dataset, tok, system: str | None = None) -> Dataset:
 
     def conv(row):
         if "messages" in row and row["messages"]:
-            msgs = row["messages"]
-            user = "\n\n".join(m["content"] for m in msgs[:-1] if m["role"] == "user")
-            return {"prompt": render_prompt(tok, user, system), "completion": msgs[-1]["content"] + end}
+            msgs = [{"role": m["role"], "content": m["content"]} for m in row["messages"]]
+            # the whole conversation before the last turn is the prompt, earlier assistant turns included
+            return {"prompt": render_messages(tok, msgs[:-1], system), "completion": msgs[-1]["content"] + end}
         return {"prompt": render_prompt(tok, row["prompt"], system), "completion": row["completion"] + end}
 
     return ds.map(conv, remove_columns=ds.column_names)
