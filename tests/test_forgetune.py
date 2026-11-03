@@ -35,6 +35,17 @@ def test_messages_rows_use_last_assistant_turn(tmp_path):
     assert ds[0]["prompt"] == "<user>hi<assistant>" and ds[0]["completion"] == "hello</s>"
 
 
+def test_messages_rows_keep_system_and_earlier_turns(tmp_path):
+    msgs = [{"role": "system", "content": "Answer in SQL."}, {"role": "user", "content": "all users"},
+            {"role": "assistant", "content": "select * from users"}, {"role": "user", "content": "only names"},
+            {"role": "assistant", "content": "select name from users"}]
+    src = write_jsonl(tmp_path / "d.jsonl", [{"messages": msgs}])
+    ds = data.to_sft(data.read(src), FakeTok(), system="Be brief.")
+    assert ds[0]["prompt"] == ("<system>Answer in SQL.<user>all users<assistant>select * from users"
+                               "<user>only names<assistant>")
+    assert ds[0]["completion"] == "select name from users</s>"
+
+
 def test_preference_rows(tmp_path):
     src = write_jsonl(tmp_path / "d.jsonl", [{"prompt": "q", "chosen": "good", "rejected": "bad"}])
     ds = data.to_dpo(data.read(src), FakeTok())
